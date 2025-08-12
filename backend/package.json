@@ -1,0 +1,25 @@
+{
+  "name": "grama-charithra-backend",
+  "version": "1.0.0",
+  "description": "Backend for Grama Charithra website",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "server": "nodemon server.js",
+    "seed": "node seeds/villages.seed.js"
+  },
+  "dependencies": {
+    "@testing-library/react": "^16.3.0",
+    "axios": "^1.11.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^10.0.0",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^6.13.8",
+    "react-router-dom": "^7.8.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
