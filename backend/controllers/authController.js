@@ -2,6 +2,19 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
+// Get all users (admin only)
+exports.getAllUsers = async (req, res) => {
+  try {
+    console.log('Fetching all users for admin:', req.user.email);
+    const users = await User.find().select('-password').sort({ createdAt: -1 });
+    console.log('Found users:', users.length);
+    res.json(users);
+  } catch (err) {
+    console.error('Error fetching all users:', err.message);
+    res.status(500).send('Server error');
+  }
+};
+
 // Register a new user
 exports.register = async (req, res) => {
   const { name, email, password } = req.body;

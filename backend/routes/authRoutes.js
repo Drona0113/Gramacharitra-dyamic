@@ -18,6 +18,16 @@ router.post('/login', authController.login);
 // @access  Private
 router.get('/current', auth, authController.getCurrentUser);
 
+// @route   GET api/auth/users
+// @desc    Get all users (admin only)
+// @access  Private (Admin)
+router.get('/users', auth, (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+  }
+  next();
+}, authController.getAllUsers);
+
 // @route   PUT api/auth/profile
 // @desc    Update current user profile
 // @access  Private
