@@ -18,4 +18,9 @@ router.post('/login', authController.login);
 // @access  Private
 router.get('/current', auth, authController.getCurrentUser);
 
+// @route   PUT api/auth/profile
+// @desc    Update current user profile
+// @access  Private
+router.put('/profile', auth, authController.updateProfile);
+
 module.exports = router;

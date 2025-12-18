@@ -107,3 +107,52 @@ exports.getCurrentUser = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
+
+// Update current user profile
+exports.updateProfile = async (req, res) => {
+  const allowedFields = [
+    'name',
+    'email',
+    'phone',
+    'designation',
+    'organization',
+    'location',
+    'bio',
+    'avatarUrl'
+  ];
+
+  const updates = {};
+  allowedFields.forEach(field => {
+    if (req.body[field] !== undefined) {
+      updates[field] = req.body[field];
+    }
+  });
+
+  if (Object.keys(updates).length === 0) {
+    return res.status(400).json({ message: 'No valid fields provided for update' });
+  }
+
+  try {
+    if (updates.email) {
+      const existingUser = await User.findOne({ email: updates.email, _id: { $ne: req.user.id } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email is already in use' });
+      }
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: updates },
+      { new: true, runValidators: true, context: 'query' }
+    ).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
