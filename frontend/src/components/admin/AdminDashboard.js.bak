@@ -1,0 +1,146 @@
+import React, { useState, useEffect } from 'react';
+import VillageList from './VillageList';
+import VillageForm from './VillageForm';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../services/api';
+
+const AdminDashboard = () => {
+  const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState('villages');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [editingVillage, setEditingVillage] = useState(null);
+  const [stats, setStats] = useState({
+    totalVillages: 0,
+    totalUsers: 0,
+    totalReviews: 0
+  });
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      // Fetch villages count
+      const villagesResponse = await api.get('/villages');
+      setStats(prev => ({
+        ...prev,
+        totalVillages: villagesResponse.data.length
+      }));
+
+      // You can add more API calls here for users and reviews when those endpoints are available
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const handleAddNew = () => {
+    setEditingVillage(null);
+    setShowAddForm(true);
+  };
+
+  const handleEdit = (village) => {
+    setEditingVillage(village);
+    setShowAddForm(true);
+  };
+
+  const handleFormClose = () => {
+    setShowAddForm(false);
+    setEditingVillage(null);
+  };
+
+  const handleFormSave = () => {
+    // Refresh the village list after save
+    window.location.reload(); // Simple refresh for now
+  };
+
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="admin-access-denied">
+        <h2>Access Denied</h2>
+        <p>You need admin privileges to access this page.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-dashboard">
+      <div className="admin-header">
+        <div className="admin-title">
+          <h1>Admin Dashboard</h1>
+          <p>Welcome, {user.name}!</p>
+        </div>
+        <button onClick={logout} className="btn-secondary">
+          Logout
+        </button>
+      </div>
+
+      <div className="admin-tabs">
+        <button 
+          className={`tab-btn ${activeTab === 'villages' ? 'active' : ''}`}
+          onClick={() => setActiveTab('villages')}
+        >
+          Manage Villages
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          Analytics
+        </button>
+      </div>
+
+      <div className="admin-content">
+        {activeTab === 'villages' && (
+          <div className="villages-management">
+            <div className="section-header">
+              <h2>Village Management</h2>
+              <button 
+                onClick={handleAddNew}
+                className="btn-primary"
+              >
+                Add New Village
+              </button>
+            </div>
+            
+            {showAddForm ? (
+              <VillageForm 
+                village={editingVillage}
+                onClose={handleFormClose}
+                onSave={handleFormSave}
+              />
+            ) : (
+              <VillageList onEdit={handleEdit} />
+            )}
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div className="analytics">
+            <h2>Analytics Dashboard</h2>
+            <div className="analytics-cards">
+              <div className="analytics-card">
+                <h3>Total Villages</h3>
+                <p className="analytics-number">{stats.totalVillages}</p>
+              </div>
+              <div className="analytics-card">
+                <h3>Total Users</h3>
+                <p className="analytics-number">{stats.totalUsers}</p>
+              </div>
+              <div className="analytics-card">
+                <h3>Total Reviews</h3>
+                <p className="analytics-number">{stats.totalReviews}</p>
+              </div>
+              <div className="analytics-card">
+                <h3>Monthly Visitors</h3>
+                <p className="analytics-number">2.3K</p>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AdminDashboard;
