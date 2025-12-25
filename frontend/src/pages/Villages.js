@@ -17,7 +17,7 @@ const Villages = () => {
           ) : (
             <div className="village-grid">
               {villages.map(village => (
-                <VillageCard key={village._id} village={village} />
+                <VillageCard key={village._id} village={village} hideManageButton={true} />
               ))}
             </div>
           )}

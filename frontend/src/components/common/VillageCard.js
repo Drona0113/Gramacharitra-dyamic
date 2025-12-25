@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useVillages } from '../../context/VillageContext';
 
-const VillageCard = ({ village, showAdminActions = false, onEdit, onDelete }) => {
+const VillageCard = ({ village, showAdminActions = false, onEdit, onDelete, hideManageButton = false }) => {
   const { user } = useAuth();
   const { deleteVillage } = useVillages();
   const [isHovered, setIsHovered] = useState(false);
@@ -90,7 +90,7 @@ const VillageCard = ({ village, showAdminActions = false, onEdit, onDelete }) =>
             </div>
           )}
           
-          {user && user.role && user.role === 'admin' && (
+          {user && user.role && user.role === 'admin' && !hideManageButton && (
             <div className="quick-admin-actions">
               <Link 
                 to={`/admin`}

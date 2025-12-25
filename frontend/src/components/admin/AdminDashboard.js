@@ -151,7 +151,24 @@ const AdminDashboard = () => {
     }
   };
 
+  // Debug authentication state
+  console.log('AdminDashboard - isAdminLoading:', isAdminLoading);
+  console.log('AdminDashboard - adminUser:', adminUser);
+  console.log('AdminDashboard - localStorage token:', localStorage.getItem('token'));
+
+  // Show loading state while admin context is loading
+  if (isAdminLoading) {
+    console.log('AdminDashboard - Showing loading state');
+    return (
+      <div className="admin-loading">
+        <div className="loading-spinner"></div>
+        <p>Loading admin dashboard...</p>
+      </div>
+    );
+  }
+
   if (!adminUser) {
+    console.log('AdminDashboard - No admin user, showing access denied');
     return (
       <div className="admin-access-denied">
         <h2>Access Denied</h2>
@@ -159,6 +176,8 @@ const AdminDashboard = () => {
       </div>
     );
   }
+
+  console.log('AdminDashboard - Rendering dashboard for admin:', adminUser.name);
 
   return (
     <div className="admin-dashboard">

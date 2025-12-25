@@ -80,10 +80,14 @@ export const AdminProvider = ({ children }) => {
 
     // 🔹 Get Current Admin (from backend using token)
     const getCurrentAdmin = async () => {
+        console.log('AdminContext - getCurrentAdmin called');
         try {
             setIsAdminLoading(true);
             const token = localStorage.getItem("token");
+            console.log('AdminContext - Token found:', !!token);
+            
             if (!token) {
+                console.log('AdminContext - No token, setting adminUser to null');
                 setAdminUser(null);
                 setIsAdmin(false);
                 return;
@@ -94,14 +98,20 @@ export const AdminProvider = ({ children }) => {
             });
 
             const user = res.data;
+            console.log('AdminContext - User data received:', user);
+            
             if (user.role !== 'admin') {
+                console.log('AdminContext - User is not admin:', user.role);
                 setAdminUser(null);
                 setIsAdmin(false);
                 return;
             }
+            
+            console.log('AdminContext - Admin user confirmed:', user.name);
             setAdminUser(user);
             setIsAdmin(true);
         } catch (error) {
+            console.log('AdminContext - Error in getCurrentAdmin:', error);
             setAdminUser(null);
             setIsAdmin(false);
         } finally {
