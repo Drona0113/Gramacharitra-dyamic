@@ -5,7 +5,7 @@ const Festivals = ({ data }) => {
 
   return (
     <section className="festivals">
-      <div className="container">
+      <div className="section-inner">
         <div className="section-title">
           <h2>Major Festivals</h2>
         </div>

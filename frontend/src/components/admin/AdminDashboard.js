@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import VillageList from './VillageList';
 import VillageForm from './VillageForm';
 import { useAdmin } from '../../context/AdminContext';
@@ -11,7 +12,11 @@ const AdminDashboard = () => {
     updateAdminProfile,
     isAdminLoading,
   } = useAdmin();
-  const [activeTab, setActiveTab] = useState('villages');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = new URLSearchParams(location.search);
+  const initialTab = params.get('tab') || 'villages';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingVillage, setEditingVillage] = useState(null);
   const [stats, setStats] = useState({
@@ -38,6 +43,16 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchStats();
   }, []);
+
+  // keep `tab` query param in sync with the active tab so page refresh preserves it
+  useEffect(() => {
+    const cur = new URLSearchParams(location.search).get('tab') || 'villages';
+    if (cur !== activeTab) {
+      const next = new URLSearchParams(location.search);
+      next.set('tab', activeTab);
+      navigate(`${location.pathname}?${next.toString()}`, { replace: true });
+    }
+  }, [activeTab, location.pathname, location.search, navigate]);
 
   useEffect(() => {
     if (adminUser) {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAdmin } from '../../context/AdminContext';
 import SearchBar from './SearchBar';
@@ -29,10 +29,10 @@ const Header = () => {
     if (isAdminLoggedIn) {
       return (
         <>
-          <li><Link to="/" onClick={closeMenu}>Home</Link></li>
-          <li><Link to="/profile" onClick={closeMenu}>User&apos;s Profiles</Link></li>
-          <li><Link to="/villages" onClick={closeMenu}>Villages</Link></li>
-          <li><Link to="/admin/dashboard" onClick={closeMenu}>Admin Dashboard</Link></li>
+          <li><NavLink to="/" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>Home</NavLink></li>
+          <li><NavLink to="/profile" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>User&apos;s Profiles</NavLink></li>
+          <li><NavLink to="/villages" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>Villages</NavLink></li>
+          <li><NavLink to="/admin/dashboard" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>Admin Dashboard</NavLink></li>
           <li>
             <a href="#!" onClick={handleLogout}>
               Logout
@@ -45,9 +45,9 @@ const Header = () => {
     if (user) {
       return (
         <>
-          <li><Link to="/" onClick={closeMenu}>Home</Link></li>
-          <li><Link to="/villages" onClick={closeMenu}>Villages</Link></li>
-          <li><Link to="/profile" onClick={closeMenu}>Profile</Link></li>
+          <li><NavLink to="/" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>Home</NavLink></li>
+          <li><NavLink to="/villages" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>Villages</NavLink></li>
+          <li><NavLink to="/profile" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>Profile</NavLink></li>
           <li>
             <a href="#!" onClick={handleLogout}>
               Logout
@@ -59,10 +59,10 @@ const Header = () => {
 
     return (
       <>
-        <li><Link to="/" onClick={closeMenu}>Home</Link></li>
-        <li><Link to="/villages" onClick={closeMenu}>Villages</Link></li>
-        <li><Link to="/login" onClick={closeMenu}>User Login</Link></li>
-        <li><Link to="/admin" onClick={closeMenu}>Admin Login</Link></li>
+        <li><NavLink to="/" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>Home</NavLink></li>
+        {/* Villages link hidden for anonymous users; appears after login */}
+        <li><NavLink to="/login" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>User Login</NavLink></li>
+        <li><NavLink to="/admin" className={({isActive}) => `nav-link ${isActive ? 'active' : ''}`} onClick={closeMenu}>Admin Login</NavLink></li>
         {/*<li><Link to="/register" onClick={closeMenu}>Register</Link></li>*/}
       </>
     );

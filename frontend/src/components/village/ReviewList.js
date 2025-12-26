@@ -31,25 +31,30 @@ const ReviewList = ({ villageId }) => {
 
   return (
     <div className="review-list">
-      {reviews.map(review => (
-        <div key={review._id} className="review-item">
-          <div className="review-header">
-            <h4>{review.user.name}</h4>
-            <div className="review-rating">
-              {[...Array(5)].map((_, i) => (
-                <i 
-                  key={i} 
-                  className={i < review.rating ? "fas fa-star" : "far fa-star"}
-                ></i>
-              ))}
+      {reviews.map(review => {
+        const author = review.user && review.user.name ? review.user.name : 'Anonymous';
+        const rating = typeof review.rating === 'number' ? review.rating : 0;
+        return (
+          <div key={review._id} className="review-item">
+            <div className="review-header">
+              <h4>{author}</h4>
+              <div className="review-rating" aria-hidden>
+                {[...Array(5)].map((_, i) => (
+                  <i
+                    key={i}
+                    className={i < rating ? "fas fa-star" : "far fa-star"}
+                    style={{ color: i < rating ? '#f59e0b' : '#d1d5db' }}
+                  ></i>
+                ))}
+              </div>
+            </div>
+            <p className="review-comment">{review.comment || ''}</p>
+            <div className="review-date">
+              {review.createdAt ? new Date(review.createdAt).toLocaleDateString() : ''}
             </div>
           </div>
-          <p className="review-comment">{review.comment}</p>
-          <div className="review-date">
-            {new Date(review.createdAt).toLocaleDateString()}
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

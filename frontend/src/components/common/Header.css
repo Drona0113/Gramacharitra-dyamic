@@ -52,6 +52,30 @@
     transform: translateY(-1px);
 }
 
+/* Active link styling */
+.nav-link.active {
+    background: linear-gradient(90deg, rgba(255,255,255,0.14), rgba(255,255,255,0.05));
+    color: white;
+    box-shadow: 0 8px 20px rgba(2,6,23,0.08);
+    transform: translateY(-3px);
+    position: relative;
+}
+
+/* small indicator under active link */
+.nav-link.active::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -8px;
+    width: 40%;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg,#f97316,#f59e0b);
+    box-shadow: 0 6px 20px rgba(249,115,22,0.18);
+}
+
+
 .user-menu, .auth-links {
     display: flex;
     align-items: center;

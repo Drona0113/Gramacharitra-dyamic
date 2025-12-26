@@ -18,7 +18,7 @@ const Economy = ({ data }) => {
 
   return (
     <section className="economy">
-      <div className="container">
+      <div className="section-inner">
         <div className="section-title">
           <h2>Local Economy</h2>
         </div>

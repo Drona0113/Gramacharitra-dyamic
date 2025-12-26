@@ -11,6 +11,7 @@ import VillageProfile from './VillageSections/VillageProfile';
 import Facts from './VillageSections/Facts';
 import ReviewForm from './ReviewForm';
 import ReviewList from './ReviewList';
+import './VillageDetail.css';
 
 const VillageDetail = () => {
   const { id } = useParams();

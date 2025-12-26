@@ -5,7 +5,7 @@ const Facts = ({ data }) => {
 
   return (
     <section className="facts">
-      <div className="container">
+      <div className="section-inner">
         <div className="section-title">
           <h2>Divine Miracles & Facts</h2>
         </div>

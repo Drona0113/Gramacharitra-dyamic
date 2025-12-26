@@ -5,7 +5,7 @@ const VillageProfile = ({ data }) => {
 
   return (
     <section className="demographics">
-      <div className="container">
+      <div className="section-inner">
         <div className="section-title">
           <h2>Village Profile</h2>
         </div>

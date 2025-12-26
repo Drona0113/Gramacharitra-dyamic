@@ -50,12 +50,13 @@ const VillageCard = ({ village, showAdminActions = false, onEdit, onDelete, hide
         />
         <div className="image-overlay"></div>
       </div>
+
+      <div className="name-badge">
+        <h3 className="badge-name">{village.name}</h3>
+        <span className="badge-district">{village.district}</span>
+      </div>
       
       <div className="card-content">
-        <div className="card-header">
-          <h3 className="village-name">{village.name}</h3>
-          <span className="village-district">{village.district} District</span>
-        </div>
         
         <p className="village-description">
           {village.description.length > 120 

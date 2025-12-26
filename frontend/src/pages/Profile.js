@@ -7,7 +7,7 @@ import './Profile.css';
 
 // Ensure the component has access to the helper functions
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { adminUser, isAdminLoading } = useAdmin();
   const [activeTab, setActiveTab] = useState('overview');
   const [profileImage, setProfileImage] = useState(null);
@@ -16,7 +16,9 @@ const Profile = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  // derive loading from auth and admin context loaders
+  // show loading until both auth and admin checks complete
+  // (prevents rendering 'N/A' before user data arrives)
   const [showMessageModal, setShowMessageModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [messageForm, setMessageForm] = useState({
@@ -46,6 +48,7 @@ const Profile = () => {
     autoSave: true,
     showTooltips: true
   });
+  const [autoSaveMessage, setAutoSaveMessage] = useState('');
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
@@ -85,10 +88,16 @@ const Profile = () => {
       document.body.classList.remove('dark-mode');
     }
 
-    // Apply font size
-    document.body.style.fontSize = settings.fontSize === 'small' ? '14px' : 
-                                  settings.fontSize === 'medium' ? '16px' : 
-                                  settings.fontSize === 'large' ? '18px' : '20px';
+    // Apply font size to root and body (affects whole app)
+    const fontSize = settings.fontSize === 'small' ? '14px' : 
+                     settings.fontSize === 'medium' ? '16px' : 
+                     settings.fontSize === 'large' ? '18px' : '20px';
+    try {
+      document.documentElement.style.fontSize = fontSize;
+      document.body.style.fontSize = fontSize;
+    } catch (err) {
+      console.warn('Could not set font size on document:', err);
+    }
 
     // Apply compact mode
     if (settings.compactMode) {
@@ -130,23 +139,115 @@ const Profile = () => {
     }
   };
 
-  // Load saved image from localStorage on component mount
+  // Helper function to get user profile image
+  function getUserProfileImage(userItem) {
+    // First check if user has avatarUrl from database
+    if (userItem && userItem.avatarUrl) return userItem.avatarUrl;
+
+    // For admin, prefer adminProfileImage
+    if (userItem && userItem.role === 'admin') {
+      const adminImage = localStorage.getItem('adminProfileImage');
+      if (adminImage) return adminImage;
+    }
+
+    // Then check localStorage for uploaded images
+    if (userItem && userItem._id) {
+      const possibleKeys = [
+        `profileImage_${userItem._id}`,
+        `profileImage_${userItem.email}`
+      ];
+
+      for (const key of possibleKeys) {
+        try {
+          const savedImage = localStorage.getItem(key);
+          if (savedImage) return savedImage;
+        } catch (err) {
+          // ignore corrupted storage entries
+        }
+      }
+    }
+
+    return null;
+  }
+
+  // Load saved image from localStorage when user is available (keeps profile across refresh/logins)
   useEffect(() => {
+    const cur = adminUser || user;
     const loadImage = () => {
-      console.log('Loading admin profile image...');
-      // Simple load from localStorage with fixed key
-      const savedImage = localStorage.getItem('adminProfileImage');
+      if (!cur) return;
+      let savedImage = null;
+
+      try {
+        // Try canonical keys first
+        const tryKeys = [];
+        if (cur._id) tryKeys.push(`profileImage_${cur._id}`);
+        if (cur.email) {
+          tryKeys.push(`profileImage_${cur.email}`);
+          tryKeys.push(`profileImage_${cur.email.toLowerCase()}`);
+          tryKeys.push(`profileImage_${encodeURIComponent(cur.email)}`);
+        }
+
+        for (const key of tryKeys) {
+          try {
+            const val = localStorage.getItem(key);
+            if (val) { savedImage = val; console.log('Found profile image at key', key); break; }
+          } catch (err) {
+            // ignore
+          }
+        }
+
+        // If not found, scan any profileImage_* keys and pick one that contains the user's id or email substring
+        if (!savedImage) {
+          for (let i = 0; i < localStorage.length; i++) {
+            const k = localStorage.key(i);
+            if (!k) continue;
+            if (k.startsWith('profileImage_')) {
+              const lowered = k.toLowerCase();
+              if ((cur._id && lowered.includes(String(cur._id).toLowerCase())) || (cur.email && lowered.includes(String(cur.email).toLowerCase()))) {
+                try { savedImage = localStorage.getItem(k); console.log('Found profile image by scanning key', k); break; } catch (err) { }
+              }
+            }
+          }
+        }
+
+        // Admin fallback
+        if (!savedImage && cur.role === 'admin') {
+          try { savedImage = localStorage.getItem('adminProfileImage'); if (savedImage) console.log('Loaded adminProfileImage'); } catch (err) { }
+        }
+
+        // Legacy global key handling: do NOT automatically migrate a single
+        // `profileImage` value into per-user keys. That caused the same image
+        // to appear for every user. If a legacy image exists, prefer using it
+        // only for admin users (no automatic copy); otherwise skip.
+        if (!savedImage) {
+          try {
+            const legacy = localStorage.getItem('profileImage');
+            if (legacy) {
+              if (cur && cur.role === 'admin') {
+                savedImage = legacy;
+                console.log('Using legacy profileImage for admin only');
+              } else {
+                console.log('Legacy profileImage found but skipping migration for non-admin user', cur.email || cur._id);
+              }
+            }
+          } catch (err) {
+            console.warn('Error reading legacy profile image', err);
+          }
+        }
+      } catch (err) {
+        console.error('Error reading profile image from storage', err);
+      }
+
       if (savedImage) {
-        console.log('Found admin profile image, setting preview');
         setImagePreview(savedImage);
+        console.log('Loaded saved profile image for', cur.email || cur._id);
       } else {
-        console.log('No admin profile image found');
+        console.log('No saved profile image found for user', cur.email || cur._id);
       }
     };
 
-    // Load immediately
     loadImage();
-  }, []);
+  }, [adminUser, user]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -165,19 +266,19 @@ const Profile = () => {
   // Check if current user is admin with null checks
   const currentUser = adminUser || user || {};
   
-  // Set loading to false once we have user data and admin context is loaded
-  useEffect(() => {
-    if (!isAdminLoading) {
-      setIsLoading(false);
-    }
-  }, [isAdminLoading]);
-  
-  // Show loading state while checking auth
+  const isLoading = !!authLoading || !!isAdminLoading;
+
+  // Show loading state while checking auth/admin
   if (isLoading) {
     return <div className="loading">Loading user data...</div>;
   }
   const isAdmin = currentUser && currentUser.role && currentUser.role === 'admin';
   const showAllUsers = isAdmin;
+
+  // Prefer showing savedProfileData only when it belongs to the current user.
+  const profile = (savedProfileData && (savedProfileData.userId === currentUser._id || savedProfileData.email === currentUser.email))
+    ? { ...currentUser, ...savedProfileData }
+    : currentUser;
 
   console.log('Profile.js - Current user:', user);
   console.log('Profile.js - Admin user:', adminUser);
@@ -317,31 +418,7 @@ const Profile = () => {
     }
   };
 
-  // Helper function to get user profile image
-  const getUserProfileImage = (userItem) => {
-    // First check if user has avatarUrl from database
-    if (userItem.avatarUrl) {
-      return userItem.avatarUrl;
-    }
-    
-    // Then check localStorage for uploaded images
-    if (userItem && userItem._id) {
-      const possibleKeys = [
-        `profileImage_${userItem._id}`,
-        `profileImage_${userItem.email}`,
-        'profileImage'
-      ];
-      
-      for (const key of possibleKeys) {
-        const savedImage = localStorage.getItem(key);
-        if (savedImage) {
-          return savedImage;
-        }
-      }
-    }
-    
-    return null;
-  };
+
 
   // Simple handle save profile changes
   const handleSaveProfile = () => {
@@ -386,7 +463,9 @@ const Profile = () => {
   const handleEditProfile = () => {
     setIsEditingProfile(true);
     // Use saved profile data if available, otherwise use currentUser, or empty strings
-    const profileData = savedProfileData || currentUser || {};
+    const profileData = (savedProfileData && (savedProfileData.userId === currentUser._id || savedProfileData.email === currentUser.email))
+      ? savedProfileData
+      : currentUser || {};
     setEditedProfile({
       name: profileData?.name || '',
       email: profileData?.email || '',
@@ -473,64 +552,56 @@ const Profile = () => {
     });
   };
 
-  // Handle settings changes
+  // Handle settings changes (auto-save + immediate side-effects)
   const handleSettingChange = (setting, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [setting]: value
-    }));
-  };
+    setSettings(prev => {
+      const next = {
+        ...prev,
+        [setting]: value
+      };
 
-  // Handle save settings
-  const handleSaveSettings = () => {
-    // Save to localStorage
-    localStorage.setItem('userSettings', JSON.stringify(settings));
-    
-    // Apply notification settings
-    if (settings.emailNotifications) {
-      console.log('Email notifications enabled');
-      // Here you would implement actual email notification logic
-    }
-    
-    if (settings.pushNotifications) {
-      console.log('Push notifications enabled');
-      // Request notification permission if not granted
-      if ('Notification' in window && Notification.permission === 'default') {
-        Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            console.log('Notification permission granted');
-          }
-        });
+      // Persist immediately (auto-save)
+      try {
+        localStorage.setItem('userSettings', JSON.stringify(next));
+      } catch (err) {
+        console.error('Failed to save settings to localStorage', err);
       }
-    }
 
-    // Apply privacy settings
-    if (settings.privateProfile) {
-      console.log('Private profile enabled');
-      // Here you would implement profile privacy logic
-    }
+      // Immediate side-effects for a few settings
+      if (setting === 'pushNotifications' && value) {
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') console.log('Notification permission granted');
+          });
+        }
+      }
 
-    // Apply security settings
-    if (settings.twoFactorAuth) {
-      console.log('Two-factor authentication enabled');
-      // Here you would implement 2FA logic
-    }
+      if (setting === 'emailNotifications' && value) {
+        console.log('Email notifications enabled');
+        // integrate with real email notification logic here
+      }
 
-    // Apply performance settings
-    if (settings.cacheManagement === 'auto') {
-      console.log('Auto cache management enabled');
-      // Here you would implement cache management logic
-    }
+      if (setting === 'privateProfile') {
+        console.log('privateProfile set to', value);
+      }
 
-    // Apply backup settings
-    if (settings.autoBackup) {
-      console.log('Auto backup enabled with frequency:', settings.backupFrequency);
-      // Here you would implement backup logic
-    }
+      if (setting === 'twoFactorAuth') {
+        console.log('twoFactorAuth set to', value);
+      }
 
-    // Show success message
-    alert('Settings saved successfully! All changes have been applied.');
-    console.log('Settings saved and applied:', settings);
+      // Log auto-save
+      console.log('Settings auto-saved:', next);
+
+      // Show a short auto-save confirmation
+      try {
+        setAutoSaveMessage('Settings saved');
+        setTimeout(() => setAutoSaveMessage(''), 1500);
+      } catch (err) {
+        // ignore
+      }
+
+      return next;
+    });
   };
 
   // Handle close message modal
@@ -583,14 +654,16 @@ const Profile = () => {
     if (currentUser) {
       const keys = [
         `profileImage_${currentUser._id}`,
-        `profileImage_${currentUser.email}`,
-        'profileImage'
+        `profileImage_${currentUser.email}`
       ];
 
+      // Also remove admin-specific key for admins
+      if (currentUser.role === 'admin') keys.push('adminProfileImage');
+
       keys.forEach(key => {
-        localStorage.removeItem(key);
+        try { localStorage.removeItem(key); } catch (err) { /* ignore */ }
       });
-      
+
       console.log('Image removed for user:', currentUser.email, 'with keys:', keys);
     }
 
@@ -747,6 +820,18 @@ const Profile = () => {
         const imageData = e.target.result;
         console.log('Image uploaded, setting preview');
         setImagePreview(imageData);
+
+        // Persist to localStorage for future sessions
+        const cur = adminUser || user;
+        try {
+          if (cur && cur._id) localStorage.setItem(`profileImage_${cur._id}`, imageData);
+          if (cur && cur.email) localStorage.setItem(`profileImage_${cur.email}`, imageData);
+          // Do NOT store a generic 'profileImage' key -- store images per-user only.
+          if (cur && cur.role === 'admin') localStorage.setItem('adminProfileImage', imageData);
+          console.log('Saved profile image to localStorage for user', cur?.email || cur?._id);
+        } catch (err) {
+          console.error('Failed to save profile image to localStorage', err);
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -795,17 +880,17 @@ const Profile = () => {
             </div>
             
             <div className="profile-info">
-              <h1>{(savedProfileData?.name || currentUser?.name) || 'User'}</h1>
+              <h1>{(profile?.name) || 'User'}</h1>
               <span className="user-role" style={{ 
-                backgroundColor: (savedProfileData?.role || currentUser?.role) ? getRoleColor(savedProfileData?.role || currentUser?.role) + '20' : 'rgba(102, 126, 234, 0.2)',
-                color: (savedProfileData?.role || currentUser?.role) ? getRoleColor(savedProfileData?.role || currentUser?.role) : '#667eea'
+                backgroundColor: profile?.role ? getRoleColor(profile.role) + '20' : 'rgba(102, 126, 234, 0.2)',
+                color: profile?.role ? getRoleColor(profile.role) : '#667eea'
               }}>
-                <i className={getRoleIcon(savedProfileData?.role || currentUser?.role)}></i>
-                {(savedProfileData?.role || currentUser?.role) ? (savedProfileData?.role || currentUser?.role).charAt(0).toUpperCase() + (savedProfileData?.role || currentUser?.role).slice(1) : 'User'}
+                <i className={getRoleIcon(profile?.role)}></i>
+                {profile?.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : 'User'}
               </span>
-              {(savedProfileData?.email || currentUser?.email) && (
+              {profile?.email && (
                 <p className="user-email">
-                  <i className="fas fa-envelope"></i> {savedProfileData?.email || currentUser?.email}
+                  <i className="fas fa-envelope"></i> {profile.email}
                 </p>
               )}
             </div>
@@ -859,8 +944,8 @@ const Profile = () => {
                     <i className="fas fa-calendar-alt"></i>
                   </div>
                   <div className="stat-content">
-                    <span className="stat-number">
-                      {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString('en-US', {
+                      <span className="stat-number">
+                      {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-US', {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric'
@@ -875,7 +960,7 @@ const Profile = () => {
                     <i className="fas fa-id-badge"></i>
                   </div>
                   <div className="stat-content">
-                    <span className="stat-number">#{currentUser?._id ? currentUser._id.slice(-8) : 'N/A'}</span>
+                    <span className="stat-number">#{profile?._id ? profile._id.slice(-8) : 'N/A'}</span>
                     <p>User ID</p>
                   </div>
                 </div>
@@ -885,7 +970,7 @@ const Profile = () => {
                     <i className="fas fa-shield-alt"></i>
                   </div>
                   <div className="stat-content">
-                    <span className="stat-number">{currentUser?.role || 'User'}</span>
+                    <span className="stat-number">{profile?.role || 'User'}</span>
                     <p>Account Type</p>
                   </div>
                 </div>
@@ -961,7 +1046,7 @@ const Profile = () => {
                         style={{ marginTop: '0.5rem' }}
                       />
                     ) : (
-                      <span>{(savedProfileData?.name || currentUser?.name) || 'Not provided'}</span>
+                      <span>{profile?.name || 'Not provided'}</span>
                     )}
                   </div>
                 </div>
@@ -981,7 +1066,7 @@ const Profile = () => {
                         style={{ marginTop: '0.5rem' }}
                       />
                     ) : (
-                      <span>{(savedProfileData?.email || currentUser?.email) || 'Not provided'}</span>
+                      <span>{profile?.email || 'Not provided'}</span>
                     )}
                   </div>
                 </div>
@@ -1001,7 +1086,7 @@ const Profile = () => {
                         style={{ marginTop: '0.5rem' }}
                       />
                     ) : (
-                      <span>{(savedProfileData?.phone || currentUser?.phone) || 'Not provided'}</span>
+                      <span>{profile?.phone || 'Not provided'}</span>
                     )}
                   </div>
                 </div>
@@ -1021,7 +1106,7 @@ const Profile = () => {
                         style={{ marginTop: '0.5rem' }}
                       />
                     ) : (
-                      <span>{(savedProfileData?.designation || currentUser?.designation) || 'Not specified'}</span>
+                      <span>{profile?.designation || 'Not specified'}</span>
                     )}
                   </div>
                 </div>
@@ -1041,7 +1126,7 @@ const Profile = () => {
                         style={{ marginTop: '0.5rem' }}
                       />
                     ) : (
-                      <span>{(savedProfileData?.organization || currentUser?.organization) || 'Not specified'}</span>
+                      <span>{profile?.organization || 'Not specified'}</span>
                     )}
                   </div>
                 </div>
@@ -1061,7 +1146,7 @@ const Profile = () => {
                         style={{ marginTop: '0.5rem' }}
                       />
                     ) : (
-                      <span>{(savedProfileData?.location || currentUser?.location) || 'Not specified'}</span>
+                      <span>{profile?.location || 'Not specified'}</span>
                     )}
                   </div>
                 </div>
@@ -1346,6 +1431,11 @@ const Profile = () => {
                         <option value="medium">Medium</option>
                         <option value="large">Large</option>
                       </select>
+                      {autoSaveMessage && (
+                        <div style={{ marginTop: '0.5rem', color: '#059669', fontSize: '0.9rem', fontWeight: 600 }}>
+                          {autoSaveMessage}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1391,31 +1481,7 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Settings Actions */}
-              <div style={{ marginTop: '2rem' }}>
-                <h3>Account Actions</h3>
-                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginTop: '1rem' }}>
-                  <button className="btn-primary" onClick={handleSaveSettings}>
-                    <i className="fas fa-save"></i>
-                    Save Settings
-                  </button>
-                  <button className="btn-secondary" onClick={handleUpdateProfile}>
-                    <i className="fas fa-user-edit"></i>
-                    Edit Profile
-                  </button>
-                  <button className="btn-secondary" onClick={handleViewActivity}>
-                    <i className="fas fa-chart-line"></i>
-                    View Activity
-                  </button>
-                </div>
-                
-                <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0' }}>
-                  <button className="btn-secondary" style={{ backgroundColor: '#fef2f2', color: '#dc2626', borderColor: '#fecaca' }} onClick={handleLogout}>
-                    <i className="fas fa-sign-out-alt"></i>
-                    Logout
-                  </button>
-                </div>
-              </div>
+
             </div>
           )}
         </div>

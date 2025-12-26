@@ -23,7 +23,7 @@ const NameOrigin = ({ data }) => {
 
   return (
     <section className="name-origin">
-      <div className="container">
+      <div className="section-inner">
         <div className="section-title">
           <h2>Why "{data.title || 'This Village'}"?</h2>
         </div>

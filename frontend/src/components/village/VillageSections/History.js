@@ -28,7 +28,7 @@ const History = ({ data }) => {
   if (!data) {
     return (
       <section className="history-section">
-        <div className="container">
+        <div className="section-inner">
           <div className="section-title">
             <h2>Historical Timeline</h2>
           </div>
@@ -43,7 +43,7 @@ const History = ({ data }) => {
 
   return (
     <section className="history-section">
-      <div className="container">
+      <div className="section-inner">
         <div className="section-title">
           <h2>Historical Timeline</h2>
         </div>

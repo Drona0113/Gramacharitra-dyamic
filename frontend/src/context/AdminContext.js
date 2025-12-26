@@ -14,7 +14,8 @@ export const useAdmin = () => {
 
 export const AdminProvider = ({ children }) => {
     const [adminUser, setAdminUser] = useState(null);
-    const [isAdminLoading, setIsAdminLoading] = useState(false);
+    // start as loading so ProtectedAdminRoute waits for the auth check
+    const [isAdminLoading, setIsAdminLoading] = useState(true);
     const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => {

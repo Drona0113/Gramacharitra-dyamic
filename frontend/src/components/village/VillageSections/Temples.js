@@ -5,7 +5,7 @@ const Temples = ({ data }) => {
 
   return (
     <section className="temples">
-      <div className="container">
+      <div className="section-inner">
         <div className="section-title">
           <h2>Sacred Sites</h2>
         </div>

@@ -1,0 +1,115 @@
+/* Styles for VillageDetail page and sections */
+.village-detail-page { font-family: inherit; color: #0f172a; }
+
+/* Force remove left/right padding and constraints for truly edge-to-edge content */
+.village-detail-page,
+.village-detail-page .container,
+.village-detail-page .section-inner,
+.village-detail-page .village-content,
+.village-detail-page .village-banner-content,
+.village-detail-page .village-nav,
+.village-detail-page .village-reviews,
+.village-detail-page .village-footer {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* Make the village detail page full-bleed: override container only on this page */
+.village-detail-page .container { 
+  max-width: 100% !important; 
+  padding: 0 !important; 
+  margin: 0 !important; 
+  width: 100%;
+}
+
+/* Hero / banner — full width, stronger visual */
+.village-banner { position: relative; width: 100%; overflow: hidden; margin: 0; }
+.village-banner-img { width: 100%; height: 420px; object-fit: cover; display: block; transform-origin: center; }
+.village-banner-overlay { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(3,37,18,0.55), rgba(3,37,18,0.35)); mix-blend-mode: multiply; }
+
+/* Banner content spans full width along the bottom (no white box) */
+.village-banner-content { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; color: #fff; background: linear-gradient(180deg, rgba(6,95,70,0.0), rgba(6,95,70,0.72)); padding: 36px 0; display:flex; flex-direction:column; gap:8px; }
+.village-title { margin: 0; font-size: clamp(1.6rem, 3.5vw, 2.6rem); font-weight: 800; color: #fff; text-shadow: 0 4px 18px rgba(2,6,23,0.45); }
+.village-district { font-size: 1rem; color: rgba(255,255,255,0.92); font-weight:700; }
+.village-description { margin-top: 6px; color: rgba(255,255,255,0.92); font-size: 1rem; max-width: 1400px; }
+
+/* Navigation tabs */
+.village-nav { display: flex; justify-content: center; margin: 18px 0; }
+.village-nav ul { list-style: none; display: flex; gap: 10px; padding: 0; margin: 0; flex-wrap: wrap; }
+.village-nav li button { background: rgba(255,255,255,0.92); border: 1px solid rgba(6,95,70,0.06); color: #064e3b; padding: 8px 12px; border-radius: 999px; cursor: pointer; font-weight: 700; display: flex; gap:8px; align-items: center; }
+.village-nav li button.active { background: linear-gradient(90deg,#f97316,#f59e0b); color: white; box-shadow: 0 8px 22px rgba(249,115,22,0.12); }
+
+/* Section container */
+.village-content { padding: 12px 0 30px 0; display: grid; gap: 22px; }
+
+/* Make each section full-bleed horizontally and remove side gaps */
+.village-content section { width: 100%; margin: 0; border-radius: 0; padding: 28px 0; background: transparent; box-shadow: none; }
+/* section-inner now reaches full width; remove side padding so content can touch edges */
+.village-content .section-inner { padding: 0; max-width: 100%; margin: 0; }
+
+/* If a section needs inner spacing, components should add their own .inner-pad */
+.inner-pad { 
+  padding: 20px 0; 
+  max-width: 100%; 
+  margin: 0; 
+  width: 100%;
+}
+
+/* Sections' internal containers should be centered and constrained even though page is full-bleed */
+.village-content section .container { 
+  max-width: 100%; 
+  padding: 0; 
+  margin: 0; 
+  width: 100%;
+}
+.village-content section .container > .section-title { margin-bottom: 14px; }
+.village-content .section-columns { display: grid; grid-template-columns: repeat(auto-fit,minmax(240px,1fr)); gap: 18px; }
+.village-section-title { font-size: 1.15rem; font-weight: 800; color: #064e3b; margin-bottom: 10px; }
+.section-card { background: #fff; border-radius: 10px; padding: 14px; box-shadow: 0 6px 18px rgba(2,6,23,0.04); }
+
+/* Map older .card usage to section-card look */
+.name-breakdown .card,
+.section-columns .card,
+.village-content .card { background:#fff; border-radius:10px; padding:12px; box-shadow:0 6px 18px rgba(2,6,23,0.04); }
+.name-breakdown .card .card-content,
+.section-columns .card .card-content,
+.village-content .card .card-content { padding:8px 6px; }
+
+/* Reviews */
+.village-reviews { padding: 28px 0; }
+.village-reviews h2 { font-size: 1.4rem; color: #064e3b; margin-bottom: 16px; }
+.review-form-container { background: linear-gradient(180deg, #ffffff, #fbfbfb); padding: 18px; border-radius: 10px; box-shadow: 0 8px 20px rgba(2,6,23,0.04); margin-bottom: 16px; }
+.review-form-container h3 { margin: 0 0 10px 0; }
+.review-form-container .form-group { margin-bottom: 12px; }
+.review-form-container label { display:block; margin-bottom:6px; font-weight:700; color:#134e4a; }
+.review-form-container textarea { width:100%; padding:10px; border-radius:8px; border:1px solid #e6e6e6; font-size:0.95rem; }
+.review-form-container .rating-input button { background:transparent; border:none; cursor:pointer; color:#cbd5e1; font-size:1.05rem; }
+.review-form-container .rating-input button.active { color: #f59e0b; }
+.review-form-container button[type="submit"] { background: linear-gradient(90deg,#2c5e1a,#3d7f24); color:white; padding:10px 16px; border-radius:10px; border:none; font-weight:700; }
+
+.review-list .review-item { padding:14px; border-radius:10px; background:#fff; box-shadow:0 8px 20px rgba(2,6,23,0.04); margin-bottom:12px; }
+.review-header { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.review-header h4 { margin:0; font-size:1rem; color:#0f172a; }
+.review-rating i { color:#f59e0b; margin-right:2px; }
+.review-comment { color:#374151; margin:8px 0 6px 0; }
+.review-date { font-size:0.82rem; color:#6b7280; }
+
+/* Footer inside village page */
+.village-footer { margin-top: 26px; padding: 40px 20px; border-radius: 6px; background: linear-gradient(180deg,#14532d,#0f3f26); text-align:center; box-shadow: 0 12px 36px rgba(2,6,23,0.12); position: relative; z-index: 12; }
+.village-footer .footer-quote { font-weight:700; color:#ffffff; margin:0 0 18px 0; font-size:1.05rem; }
+.village-footer .map-btn { display:inline-flex; gap:8px; align-items:center; background:#ffffff; color:#14532d; padding:10px 16px; border-radius:10px; border:none; font-weight:700; text-decoration:none; }
+
+@media (max-width: 1024px) {
+  .village-banner-img { height:320px; }
+  .village-banner-content { padding: 20px 22px; }
+}
+
+@media (max-width: 600px) {
+  .village-banner-img { height:200px; }
+  .village-banner-content { padding: 14px 16px; }
+  .village-content .section-inner { padding: 0 18px; }
+}
