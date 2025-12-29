@@ -308,48 +308,26 @@ const Profile = () => {
     const userToDelete = allUsers.find(u => u._id === userId);
     const userName = userToDelete?.name || 'Unknown User';
     
-    if (window.confirm(`Are you sure you want to delete "${userName}"?\n\nThis action will:\n• Delete the user's profile\n• Remove all their data and history\n• This action cannot be undone`)) {
+    if (!window.confirm(`Are you sure you want to delete "${userName}"?\n\nThis action will:\n• Delete the user's profile\n• Remove all their data and history\n• This action cannot be undone`)) return;
+
+    try {
+      // Call the admin delete endpoint (protected)
+      await api.delete(`/admin/users/${userId}`);
+
+      // Remove any per-user localStorage images
       try {
-        // Try different possible API endpoints
-        let deleted = false;
-        
-        // Try endpoint 1: /auth/users/:id
-        try {
-          await api.delete(`/auth/users/${userId}`);
-          deleted = true;
-        } catch (err1) {
-          console.log('Endpoint /auth/users/:id failed, trying next...');
-          
-          // Try endpoint 2: /users/:id
-          try {
-            await api.delete(`/users/${userId}`);
-            deleted = true;
-          } catch (err2) {
-            console.log('Endpoint /users/:id failed, trying next...');
-            
-            // Try endpoint 3: /api/admin/users/:id
-            try {
-              await api.delete(`/api/admin/users/${userId}`);
-              deleted = true;
-            } catch (err3) {
-              console.log('All endpoints failed');
-            }
-          }
-        }
-        
-        if (deleted) {
-          setAllUsers(allUsers.filter(user => user._id !== userId));
-          alert(`"${userName}" has been successfully deleted from the system.`);
-        } else {
-          // Simulate deletion for demo purposes
-          console.log('Simulating user deletion for demo');
-          setAllUsers(allUsers.filter(user => user._id !== userId));
-          alert(`"${userName}" has been successfully deleted from the system. (Demo Mode)`);
-        }
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        alert('Failed to delete user. Please try again or contact support.');
+        const user = allUsers.find(u => u._id === userId) || {};
+        if (user._id) localStorage.removeItem(`profileImage_${user._id}`);
+        if (user.email) localStorage.removeItem(`profileImage_${user.email}`);
+      } catch (err) {
+        console.warn('Failed to remove localStorage images for user:', err);
       }
+
+      setAllUsers(allUsers.filter(user => user._id !== userId));
+      alert(`"${userName}" has been successfully deleted from the system.`);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert(error?.response?.data?.message || 'Failed to delete user. Please try again or contact support.');
     }
   };
 
@@ -691,13 +669,20 @@ const Profile = () => {
                 <div key={userItem._id} className="user-card">
                   <div className="card-header">
                     <div className="user-avatar">
-                      {userItem.avatarUrl ? (
-                        <img src={userItem.avatarUrl} alt={userItem.name} />
-                      ) : (
-                        <div className="avatar-placeholder" style={{ backgroundColor: getRoleColor(userItem.role) }}>
-                          <i className={getRoleIcon(userItem.role)}></i>
-                        </div>
-                      )}
+                      {(() => {
+                        const src = getUserProfileImage(userItem) || userItem.avatarUrl || null;
+                        return src ? (
+                          <img
+                            src={src}
+                            alt={userItem.name}
+                            onError={(e) => { e.target.onerror = null; e.target.src = '/images/gramacharitra.jpg'; }}
+                          />
+                        ) : (
+                          <div className="avatar-placeholder" style={{ backgroundColor: getRoleColor(userItem.role) }}>
+                            <i className={getRoleIcon(userItem.role)}></i>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className="user-basic">
                       <h3>{userItem.name}</h3>
@@ -821,17 +806,31 @@ const Profile = () => {
         console.log('Image uploaded, setting preview');
         setImagePreview(imageData);
 
-        // Persist to localStorage for future sessions
-        const cur = adminUser || user;
-        try {
-          if (cur && cur._id) localStorage.setItem(`profileImage_${cur._id}`, imageData);
-          if (cur && cur.email) localStorage.setItem(`profileImage_${cur.email}`, imageData);
-          // Do NOT store a generic 'profileImage' key -- store images per-user only.
-          if (cur && cur.role === 'admin') localStorage.setItem('adminProfileImage', imageData);
-          console.log('Saved profile image to localStorage for user', cur?.email || cur?._id);
-        } catch (err) {
-          console.error('Failed to save profile image to localStorage', err);
-        }
+        // Upload avatar to server (authoritative storage)
+        (async () => {
+          try {
+            const payload = { avatarUrl: imageData };
+            const res = await api.post('/auth/avatar', payload);
+            console.log('Uploaded avatar to server:', res.data);
+            // Update local state & allUsers list if present
+            if (adminUser) {
+              // refresh users list
+              fetchAllUsers();
+            }
+          } catch (err) {
+            console.error('Failed to upload avatar to server, falling back to localStorage', err);
+            // Fallback: persist to localStorage for this browser session
+            const cur = adminUser || user;
+            try {
+              if (cur && cur._id) localStorage.setItem(`profileImage_${cur._id}`, imageData);
+              if (cur && cur.email) localStorage.setItem(`profileImage_${cur.email}`, imageData);
+              if (cur && cur.role === 'admin') localStorage.setItem('adminProfileImage', imageData);
+              console.log('Saved profile image to localStorage for user', cur?.email || cur?._id);
+            } catch (err2) {
+              console.error('Failed to save profile image to localStorage', err2);
+            }
+          }
+        })();
       };
       reader.readAsDataURL(file);
     }

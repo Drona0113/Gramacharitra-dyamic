@@ -68,6 +68,7 @@ exports.updateVillage = async (req, res) => {
   } = req.body;
   
   try {
+    console.log('updateVillage payload:', req.body);
     let village = await Village.findById(req.params.id);
     
     if (!village) {
@@ -82,8 +83,8 @@ exports.updateVillage = async (req, res) => {
     
     res.json(village);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server error');
+    console.error(err);
+    res.status(500).json({ message: 'Server error', error: err.message, stack: process.env.NODE_ENV === 'production' ? undefined : err.stack });
   }
 };
 

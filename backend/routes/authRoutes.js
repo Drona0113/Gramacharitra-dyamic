@@ -13,6 +13,9 @@ router.post('/register', authController.register);
 // @access  Public
 router.post('/login', authController.login);
 
+// Upload avatar for current user
+router.post('/avatar', auth, authController.uploadAvatar);
+
 // @route   GET api/auth/current
 // @desc    Get current user
 // @access  Private

@@ -71,14 +71,16 @@ const AdminDashboard = () => {
 
   const fetchStats = async () => {
     try {
-      // Fetch villages count
-      const villagesResponse = await api.get('/villages');
+      // Fetch analytics from admin endpoint (protected)
+      const res = await api.get('/admin/analytics');
+      const data = res.data || {};
       setStats(prev => ({
         ...prev,
-        totalVillages: villagesResponse.data.length
+        totalVillages: data.totalVillages ?? prev.totalVillages,
+        totalUsers: data.totalUsers ?? prev.totalUsers,
+        totalReviews: data.totalReviews ?? prev.totalReviews,
+        monthlyVisitors: data.monthlyVisitors ?? prev.monthlyVisitors
       }));
-
-      // You can add more API calls here for users and reviews when those endpoints are available
     } catch (error) {
       console.error('Error fetching stats:', error);
     }
@@ -148,8 +150,16 @@ const AdminDashboard = () => {
     const file = event.target.files[0];
     if (file) {
       const reader = new FileReader();
-      reader.onload = () => {
-        setProfileForm(prev => ({ ...prev, avatarUrl: reader.result }));
+      reader.onload = async () => {
+        const dataUrl = reader.result;
+        try {
+          await api.post('/auth/avatar', { avatarUrl: dataUrl });
+          // refresh admin user data
+          await updateAdminProfile({ avatarUrl: dataUrl });
+        } catch (err) {
+          console.error('Failed to upload admin avatar to server, saving locally', err);
+          setProfileForm(prev => ({ ...prev, avatarUrl: dataUrl }));
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -270,7 +280,7 @@ const AdminDashboard = () => {
               </div>
               <div className="analytics-card">
                 <h3>Monthly Visitors</h3>
-                <p className="analytics-number">2.3K</p>
+                <p className="analytics-number">{stats.monthlyVisitors ? stats.monthlyVisitors : '—'}</p>
               </div>
             </div>
           </div>

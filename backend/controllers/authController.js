@@ -169,3 +169,26 @@ exports.updateProfile = async (req, res) => {
     res.status(500).send('Server error');
   }
 };
+
+// Upload or update avatar for current user
+exports.uploadAvatar = async (req, res) => {
+  const { avatarUrl } = req.body;
+  if (!avatarUrl) {
+    return res.status(400).json({ message: 'No avatar provided' });
+  }
+
+  try {
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { $set: { avatarUrl } },
+      { new: true }
+    ).select('-password');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({ avatarUrl: user.avatarUrl });
+  } catch (err) {
+    console.error('Error uploading avatar:', err.message);
+    res.status(500).json({ message: 'Server error' });
+  }
+};

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 
 const VillageForm = ({ village, onClose, onSave }) => {
-  const [formData, setFormData] = useState({
+  const initialForm = {
     name: '',
     district: '',
     description: '',
@@ -40,15 +40,74 @@ const VillageForm = ({ village, onClose, onSave }) => {
       facts: [{ title: '', description: '' }]
     },
     location: {
+      type: 'Point',
       coordinates: [0, 0]
     }
-  });
+  };
+
+  const [formData, setFormData] = useState(initialForm);
+
+  const normalizeVillage = (v) => {
+    if (!v) return initialForm;
+
+    const sections = {
+      ...initialForm.sections,
+      ...(v.sections || {})
+    };
+
+    // Ensure arrays/objects that are expected exist
+    sections.nameOrigin = {
+      ...initialForm.sections.nameOrigin,
+      ...(v.sections?.nameOrigin || {})
+    };
+    sections.history = {
+      timeline: (v.sections?.history?.timeline && v.sections.history.timeline.length)
+        ? v.sections.history.timeline
+        : [...initialForm.sections.history.timeline]
+    };
+    sections.geography = {
+      features: (v.sections?.geography?.features && v.sections.geography.features.length)
+        ? v.sections.geography.features
+        : [...initialForm.sections.geography.features]
+    };
+    sections.temples = (v.sections?.temples && v.sections.temples.length)
+      ? v.sections.temples
+      : [...initialForm.sections.temples];
+    sections.festivals = (v.sections?.festivals && v.sections.festivals.length)
+      ? v.sections.festivals
+      : [...initialForm.sections.festivals];
+    sections.facts = (v.sections?.facts && v.sections.facts.length)
+      ? v.sections.facts
+      : [...initialForm.sections.facts];
+    sections.economy = {
+      ...initialForm.sections.economy,
+      ...(v.sections?.economy || {})
+    };
+    sections.profile = {
+      ...initialForm.sections.profile,
+      ...(v.sections?.profile || {})
+    };
+
+    const location = {
+      type: v.location?.type || 'Point',
+      coordinates: Array.isArray(v.location?.coordinates)
+        ? [v.location.coordinates[0] ?? 0, v.location.coordinates[1] ?? 0]
+        : [...initialForm.location.coordinates]
+    };
+
+    return {
+      ...initialForm,
+      ...v,
+      sections,
+      location
+    };
+  };
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (village) {
-      setFormData(village);
+      setFormData(prev => normalizeVillage(village));
     }
   }, [village]);
 
@@ -162,10 +221,20 @@ const VillageForm = ({ village, onClose, onSave }) => {
     setIsSubmitting(true);
     
     try {
+      const payload = {
+        ...formData,
+        location: {
+          type: formData.location?.type || 'Point',
+          coordinates: Array.isArray(formData.location?.coordinates)
+            ? [formData.location.coordinates[0] ?? 0, formData.location.coordinates[1] ?? 0]
+            : [0, 0]
+        }
+      };
+
       if (village) {
-        await api.put(`/villages/${village._id}`, formData);
+        await api.put(`/villages/${village._id}`, payload);
       } else {
-        await api.post('/villages', formData);
+        await api.post('/villages', payload);
       }
       
       onSave();
@@ -401,7 +470,7 @@ const VillageForm = ({ village, onClose, onSave }) => {
         
         <div className="form-section">
           <h3>Temples</h3>
-          {formData.sections.temples.map((item, index) => (
+          {(formData.sections.temples || []).map((item, index) => (
             <div key={index} className="array-item">
               <div className="array-item-header">
                 <span>Temple {index + 1}</span>
@@ -524,7 +593,7 @@ const VillageForm = ({ village, onClose, onSave }) => {
             <input
               type="text"
               id="economyImage"
-              value={formData.sections.economy.image}
+              value={formData.sections.economy?.image || ''}
               onChange={(e) => handleNestedChange('economy', 'image', e.target.value)}
             />
           </div>
@@ -537,7 +606,7 @@ const VillageForm = ({ village, onClose, onSave }) => {
             <input
               type="text"
               id="population"
-              value={formData.sections.profile.population}
+              value={formData.sections.profile?.population || ''}
               onChange={(e) => handleNestedChange('profile', 'population', e.target.value)}
             />
           </div>
@@ -547,7 +616,7 @@ const VillageForm = ({ village, onClose, onSave }) => {
             <input
               type="text"
               id="languages"
-              value={formData.sections.profile.languages}
+              value={formData.sections.profile?.languages || ''}
               onChange={(e) => handleNestedChange('profile', 'languages', e.target.value)}
             />
           </div>
@@ -557,7 +626,7 @@ const VillageForm = ({ village, onClose, onSave }) => {
             <input
               type="text"
               id="literacy"
-              value={formData.sections.profile.literacy}
+              value={formData.sections.profile?.literacy || ''}
               onChange={(e) => handleNestedChange('profile', 'literacy', e.target.value)}
             />
           </div>
@@ -567,7 +636,7 @@ const VillageForm = ({ village, onClose, onSave }) => {
             <input
               type="text"
               id="occupation"
-              value={formData.sections.profile.occupation}
+              value={formData.sections.profile?.occupation || ''}
               onChange={(e) => handleNestedChange('profile', 'occupation', e.target.value)}
             />
           </div>
@@ -577,7 +646,7 @@ const VillageForm = ({ village, onClose, onSave }) => {
             <input
               type="text"
               id="nearestTown"
-              value={formData.sections.profile.nearestTown}
+              value={formData.sections.profile?.nearestTown || ''}
               onChange={(e) => handleNestedChange('profile', 'nearestTown', e.target.value)}
             />
           </div>
@@ -587,7 +656,7 @@ const VillageForm = ({ village, onClose, onSave }) => {
             <input
               type="text"
               id="transport"
-              value={formData.sections.profile.transport}
+              value={formData.sections.profile?.transport || ''}
               onChange={(e) => handleNestedChange('profile', 'transport', e.target.value)}
             />
           </div>
@@ -597,7 +666,7 @@ const VillageForm = ({ village, onClose, onSave }) => {
             <input
               type="text"
               id="pinCode"
-              value={formData.sections.profile.pinCode}
+              value={formData.sections.profile?.pinCode || ''}
               onChange={(e) => handleNestedChange('profile', 'pinCode', e.target.value)}
             />
           </div>
@@ -605,7 +674,7 @@ const VillageForm = ({ village, onClose, onSave }) => {
         
         <div className="form-section">
           <h3>Facts</h3>
-          {formData.sections.facts.map((item, index) => (
+          {(formData.sections.facts || []).map((item, index) => (
             <div key={index} className="array-item">
               <div className="array-item-header">
                 <span>Fact {index + 1}</span>
@@ -651,12 +720,12 @@ const VillageForm = ({ village, onClose, onSave }) => {
             <input
               type="number"
               id="longitude"
-              value={formData.location.coordinates[0]}
+              value={formData.location?.coordinates?.[0] ?? ''}
               onChange={(e) => setFormData({
                 ...formData,
                 location: {
                   ...formData.location,
-                  coordinates: [parseFloat(e.target.value), formData.location.coordinates[1]]
+                  coordinates: [parseFloat(e.target.value) || 0, formData.location?.coordinates?.[1] ?? 0]
                 }
               })}
             />
@@ -667,12 +736,12 @@ const VillageForm = ({ village, onClose, onSave }) => {
             <input
               type="number"
               id="latitude"
-              value={formData.location.coordinates[1]}
+              value={formData.location?.coordinates?.[1] ?? ''}
               onChange={(e) => setFormData({
                 ...formData,
                 location: {
                   ...formData.location,
-                  coordinates: [formData.location.coordinates[0], parseFloat(e.target.value)]
+                  coordinates: [formData.location?.coordinates?.[0] ?? 0, parseFloat(e.target.value) || 0]
                 }
               })}
             />
