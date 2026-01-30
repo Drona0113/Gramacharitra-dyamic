@@ -192,3 +192,59 @@ exports.uploadAvatar = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Register admin user
+exports.registerAdmin = async (req, res) => {
+  const { name, email, password, adminSecret } = req.body;
+  
+  try {
+    // Verify admin secret
+    if (adminSecret !== process.env.ADMIN_SECRET) {
+      return res.status(403).json({ message: 'Invalid admin secret key' });
+    }
+    
+    let user = await User.findOne({ email });
+    
+    if (user) {
+      return res.status(400).json({ message: 'Admin user already exists' });
+    }
+    
+    user = new User({
+      name,
+      email,
+      password,
+      role: 'admin'
+    });
+    
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(password, salt);
+    
+    await user.save();
+    
+    const payload = {
+      id: user.id,
+      role: user.role
+    };
+    
+    jwt.sign(
+      payload,
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' },
+      (err, token) => {
+        if (err) throw err;
+        res.json({
+          token,
+          user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+          }
+        });
+      }
+    );
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send('Server error');
+  }
+};
